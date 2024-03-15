@@ -25,11 +25,11 @@ public class SecurityConfig {
 
         /** JWT 서버 셋팅 **/
         http.sessionManagement((sessionManagement) -> sessionManagement
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // STATELESS : 세션을 사용하지 않는다.
                 .addFilter(corsFilter); // 인증이 필요 없을 때에는 @CrossOrigin, 인증이 필요할 때는 시큐리티 필터 등록
         http.formLogin((form) -> form.disable());
-        http.httpBasic((basic) -> basic.disable());
-        
+        http.httpBasic((basic) -> basic.disable()); // 기본 http가 아닌 https 사용(Basic ID/PW X, Bearer Token O)
+
         http.authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/v1/user/**").authenticated()
                         .requestMatchers("/api/v1/manager/**").hasAnyRole("ADMIN", "MANAGER")
