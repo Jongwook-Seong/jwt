@@ -1,9 +1,11 @@
 package com.cos.jwt.config;
 
+import com.cos.jwt.config.jwt.JwtAuthenticationFilter;
 import com.cos.jwt.filter.MyFilter3;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -15,7 +17,7 @@ import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(securedEnabled = true, prePostEnabled = true)
+//@EnableMethodSecurity(securedEnabled = true, prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -23,20 +25,24 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+        AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
+
         http.addFilterBefore(new MyFilter3(), SecurityContextPersistenceFilter.class);
         http.csrf(CsrfConfigurer::disable);
 
         /** JWT 서버 셋팅 **/
         http.sessionManagement((sessionManagement) -> sessionManagement
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // STATELESS : 세션을 사용하지 않는다.
-                .addFilter(corsFilter); // 인증이 필요 없을 때에는 @CrossOrigin, 인증이 필요할 때는 시큐리티 필터 등록
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)); // STATELESS : 세션을 사용하지 않는다.
+        http.addFilter(corsFilter); // 인증이 필요 없을 때에는 @CrossOrigin, 인증이 필요할 때는 시큐리티 필터 등록
         http.formLogin((form) -> form.disable());
         http.httpBasic((basic) -> basic.disable()); // 기본 http가 아닌 https 사용(Basic ID/PW X, Bearer Token O)
+        http.addFilter(new JwtAuthenticationFilter(authenticationManager)); // AuthenticationManager(로그인 시 사용)
 
         http.authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/v1/user/**").authenticated()
-                        .requestMatchers("/api/v1/manager/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN")
+                        .requestMatchers("/user/**").authenticated()
+                        .requestMatchers("/manager/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/admin/**").hasAnyRole("ADMIN")
                         .anyRequest().permitAll()
         );
         return http.build();
