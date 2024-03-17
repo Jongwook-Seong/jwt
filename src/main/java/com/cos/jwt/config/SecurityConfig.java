@@ -1,11 +1,13 @@
 package com.cos.jwt.config;
 
+import com.cos.jwt.config.auth.PrincipalDetailsService;
 import com.cos.jwt.config.jwt.JwtAuthenticationFilter;
 import com.cos.jwt.filter.MyFilter3;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -22,11 +24,16 @@ import org.springframework.web.filter.CorsFilter;
 public class SecurityConfig {
 
     private final CorsFilter corsFilter;
+    private final PrincipalDetailsService principalDetailsService;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-        AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
+        AuthenticationManagerBuilder sharedObject = http.getSharedObject(AuthenticationManagerBuilder.class);
+        sharedObject.userDetailsService(principalDetailsService);
+        AuthenticationManager authenticationManager = sharedObject.build();
+        http.authenticationManager(authenticationManager);
+//        AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
 
         http.addFilterBefore(new MyFilter3(), SecurityContextPersistenceFilter.class);
         http.csrf(CsrfConfigurer::disable);
