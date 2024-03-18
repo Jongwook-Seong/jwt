@@ -2,7 +2,9 @@ package com.cos.jwt.config;
 
 import com.cos.jwt.config.auth.PrincipalDetailsService;
 import com.cos.jwt.config.jwt.JwtAuthenticationFilter;
+import com.cos.jwt.config.jwt.JwtAuthorizationFilter;
 import com.cos.jwt.filter.MyFilter3;
+import com.cos.jwt.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +27,7 @@ public class SecurityConfig {
 
     private final CorsFilter corsFilter;
     private final PrincipalDetailsService principalDetailsService;
+    private final UserRepository userRepository;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -35,7 +38,7 @@ public class SecurityConfig {
         http.authenticationManager(authenticationManager);
 //        AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
 
-        http.addFilterBefore(new MyFilter3(), SecurityContextPersistenceFilter.class);
+//        http.addFilterBefore(new MyFilter3(), SecurityContextPersistenceFilter.class);
         http.csrf(CsrfConfigurer::disable);
 
         /** JWT 서버 셋팅 **/
@@ -45,11 +48,12 @@ public class SecurityConfig {
         http.formLogin((form) -> form.disable());
         http.httpBasic((basic) -> basic.disable()); // 기본 http가 아닌 https 사용(Basic ID/PW X, Bearer Token O)
         http.addFilter(new JwtAuthenticationFilter(authenticationManager)); // AuthenticationManager(로그인 시 사용)
+        http.addFilter(new JwtAuthorizationFilter(authenticationManager, userRepository)); // AuthenticationManager(로그인 시 사용)
 
         http.authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/user/**").authenticated()
-                        .requestMatchers("/manager/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/admin/**").hasAnyRole("ADMIN")
+                        .requestMatchers("/api/v1/user/**").authenticated()
+                        .requestMatchers("/api/v1/manager/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN")
                         .anyRequest().permitAll()
         );
         return http.build();
